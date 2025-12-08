@@ -1,150 +1,91 @@
-// Wrap everything in DOMContentLoaded and add error handling
+// Navigation and scroll animations
 document.addEventListener('DOMContentLoaded', () => {
-    try {
-        // Navigation
-        const navbar = document.getElementById('navbar');
-        const navToggle = document.getElementById('navToggle');
-        const navMenu = document.getElementById('navMenu');
+    const navbar = document.getElementById('navbar');
+    const navToggle = document.getElementById('navToggle');
+    const navMenu = document.getElementById('navMenu');
 
-        // Navbar scroll effect
-        if (navbar) {
-            window.addEventListener('scroll', () => {
-                try {
-                    if (window.scrollY > 50) {
-                        navbar.classList.add('scrolled');
-                    } else {
-                        navbar.classList.remove('scrolled');
-                    }
-                } catch (e) {
-                    console.error('Scroll error:', e);
-                }
-            });
-        }
+    // Navbar scroll effect
+    if (navbar) {
+        window.addEventListener('scroll', () => {
+            navbar.classList.toggle('scrolled', window.scrollY > 50);
+        }, { passive: true });
+    }
 
-        // Mobile menu toggle
-        if (navToggle && navMenu) {
-            navToggle.addEventListener('click', () => {
-                navMenu.classList.toggle('active');
-            });
-        }
+    // Mobile menu toggle
+    if (navToggle && navMenu) {
+        navToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
+    }
 
-        // Close mobile menu when clicking on a link
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.addEventListener('click', () => {
-                if (navMenu) {
-                    navMenu.classList.remove('active');
-                }
-            });
+    // Close mobile menu when clicking on a link
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => navMenu?.classList.remove('active'));
+    });
+
+    // Smooth scroll for navigation links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if (target) {
+                window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' });
+            }
         });
+    });
 
-        // Smooth scroll for navigation links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    const offsetTop = target.offsetTop - 80;
-                    window.scrollTo({
-                        top: offsetTop,
-                        behavior: 'smooth'
-                    });
-                }
+    // Intersection Observer for scroll animations
+    if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('animated');
             });
+        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+        document.querySelectorAll('.fade-in-up, .slide-in-left, .slide-in-right').forEach(el => {
+            el.classList.add('animate-on-scroll');
+            observer.observe(el);
         });
-
-        // Intersection Observer for scroll animations (with fallback)
-        if ('IntersectionObserver' in window) {
-            const observerOptions = {
-                threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
-            };
-
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('animated');
-                    }
-                });
-            }, observerOptions);
-
-            const animateElements = document.querySelectorAll('.fade-in-up, .slide-in-left, .slide-in-right');
-            animateElements.forEach(el => {
-                el.classList.add('animate-on-scroll');
-                observer.observe(el);
-            });
-        } else {
-            // Fallback: add animated class immediately
-            const animateElements = document.querySelectorAll('.fade-in-up, .slide-in-left, .slide-in-right');
-            animateElements.forEach(el => {
-                el.classList.add('animated');
-            });
-        }
-    } catch (error) {
-        console.error('Navigation initialization error:', error);
+    } else {
+        document.querySelectorAll('.fade-in-up, .slide-in-left, .slide-in-right').forEach(el => {
+            el.classList.add('animated');
+        });
     }
 });
 
-// Modal Functions (can be called from anywhere)
+// Modal Functions
 function openModal(modalId) {
-    try {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        }
-    } catch (error) {
-        console.error('Error opening modal:', error);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
     }
 }
 
 function closeModal(modalId) {
-    try {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.remove('active');
-            document.body.style.overflow = 'auto';
-        }
-    } catch (error) {
-        console.error('Error closing modal:', error);
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = 'auto';
     }
 }
 
 // Close modal when clicking outside
 document.addEventListener('DOMContentLoaded', () => {
-    try {
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.remove('active');
-                    document.body.style.overflow = 'auto';
-                }
-            });
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = 'auto';
+            }
         });
-    } catch (error) {
-        console.error('Modal click handler error:', error);
-    }
+    });
 });
 
 // Button event listeners
 document.addEventListener('DOMContentLoaded', () => {
-    try {
-        const sendWishBtn = document.getElementById('sendWishBtn');
-        const confirmBtn = document.getElementById('confirmBtn');
-
-        if (sendWishBtn) {
-            sendWishBtn.addEventListener('click', () => {
-                openModal('wishModal');
-            });
-        }
-
-        if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => {
-                openModal('confirmModal');
-            });
-        }
-    } catch (error) {
-        console.error('Button initialization error:', error);
-    }
+    const sendWishBtn = document.getElementById('sendWishBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+    if (sendWishBtn) sendWishBtn.addEventListener('click', () => openModal('wishModal'));
+    if (confirmBtn) confirmBtn.addEventListener('click', () => openModal('confirmModal'));
 });
 
 async function submitWish(source = 'form') {
@@ -241,101 +182,43 @@ function submitConfirm() {
 }
 
 // Utility Functions
-function escapeHtml(text) {
-    try {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    } catch (error) {
-        return text;
-    }
-}
-
 function showNotification(message, type = 'info') {
-    try {
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.textContent = message;
-        notification.style.cssText = `
-            position: fixed;
-            top: 100px;
-            right: 20px;
-            background: ${type === 'success' ? '#4CAF50' : '#2196F3'};
-            color: white;
-            padding: 1rem 2rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            z-index: 3000;
-            animation: slideInRight 0.3s ease;
-        `;
-
-        document.body.appendChild(notification);
-
-        setTimeout(() => {
-            notification.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    document.body.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
-    } catch (error) {
-        console.error('Error showing notification:', error);
-    }
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed; top: 100px; right: 20px;
+        background: ${type === 'success' ? '#4CAF50' : '#2196F3'};
+        color: white; padding: 1rem 2rem; border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 3000;
+        animation: slideInRight 0.3s ease;
+    `;
+    document.body.appendChild(notification);
+    setTimeout(() => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
 }
 
 // Calendar Functions
 function addToCalendar(eventId) {
-    try {
-        const events = {
-            event1: {
-                name: 'LỄ VU QUY (Đám cưới Minh Tinh và Thị Lài)',
-                description: 'Cảm ơn bạn đã dành thời gian tham dự đám cưới của chúng tôi!',
-                startDate: '2025-12-21',
-                startTime: '10:30',
-                location: 'NHÀ SHVH THÔN VÂN TIÊN'
-            },
-            event2: {
-                name: 'LỄ THÀNH HÔN (Đám cưới Minh Tình và Thị Lài)',
-                description: 'Cảm ơn bạn đã dành thời gian tham dự đám cưới của chúng tôi!',
-                startDate: '2025-12-25',
-                startTime: '10:00',
-                location: 'Khu Vui Chơi Trẻ Em Vinh Quang'
-            }
-        };
-
-        const event = events[eventId];
-        if (!event) return;
-
-        // Create calendar URL
-        const startDateTime = `${event.startDate}T${event.startTime}:00`;
-        const endDateTime = `${event.startDate}T${event.startTime}:00`;
-
-        // Google Calendar
-        const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.name)}&dates=${startDateTime.replace(/[-:]/g, '').slice(0, -2)}/${endDateTime.replace(/[-:]/g, '').slice(0, -2)}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
-
-        window.open(googleUrl, '_blank');
-        showNotification('Đã mở Google Calendar!', 'success');
-    } catch (error) {
-        console.error('Error adding to calendar:', error);
-    }
+    const events = {
+        event1: { name: 'LỄ VU QUY (Đám cưới Minh Tinh và Thị Lài)', description: 'Cảm ơn bạn đã dành thời gian tham dự đám cưới của chúng tôi!', startDate: '2025-12-21', startTime: '10:30', location: 'NHÀ SHVH THÔN VÂN TIÊN' },
+        event2: { name: 'LỄ THÀNH HÔN (Đám cưới Minh Tình và Thị Lài)', description: 'Cảm ơn bạn đã dành thời gian tham dự đám cưới của chúng tôi!', startDate: '2025-12-25', startTime: '10:00', location: 'Khu Vui Chơi Trẻ Em Vinh Quang' }
+    };
+    const event = events[eventId];
+    if (!event) return;
+    const startDateTime = `${event.startDate}T${event.startTime}:00`.replace(/[-:]/g, '').slice(0, -2);
+    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.name)}&dates=${startDateTime}/${startDateTime}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
+    window.open(googleUrl, '_blank');
+    showNotification('Đã mở Google Calendar!', 'success');
 }
 
 function viewMap(eventId) {
-    try {
-        const locations = {
-            event1: 'NHÀ SHVH THÔN VÂN TIÊN',
-            event2: 'Khu Vui Chơi Trẻ Em Vinh Quang'
-        };
-
-        const location = locations[eventId];
-        if (!location) return;
-
-        const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
-        window.open(googleMapsUrl, '_blank');
-    } catch (error) {
-        console.error('Error viewing map:', error);
-    }
+    const locations = { event1: 'NHÀ SHVH THÔN VÂN TIÊN', event2: 'Khu Vui Chơi Trẻ Em Vinh Quang' };
+    const location = locations[eventId];
+    if (!location) return;
+    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`, '_blank');
 }
 
 // Gallery Lightbox Functionality
@@ -343,279 +226,109 @@ let galleryImages = [];
 let currentImageIndex = 0;
 let galleryInitialized = false;
 let imageLoadObserver = null;
-const BATCH_SIZE = 3; // Load 3 images at a time
-const BATCH_DELAY = 200; // Delay 200ms between batches
 
 function initGalleryLightbox() {
-    try {
-        // Prevent multiple initializations
-        if (galleryInitialized) return;
-        galleryInitialized = true;
+    if (galleryInitialized) return;
+    galleryInitialized = true;
 
-        // Mark empty gallery items (items without images) to hide loading spinner
-        document.querySelectorAll('.gallery-item').forEach(item => {
-            const img = item.querySelector('img');
-            if (img) {
-                item.classList.add('has-image');
-            }
-        });
+    // Mark items with images
+    document.querySelectorAll('.gallery-item').forEach(item => {
+        if (item.querySelector('img')) item.classList.add('has-image');
+    });
 
-        // Use Intersection Observer for lazy loading images with batch processing
-        if ('IntersectionObserver' in window) {
-            let pendingImages = []; // Array to store pending images
-            let processedImages = new WeakSet(); // Use WeakSet to track processed images
-            let isProcessingBatch = false;
-            let batchTimeout = null;
+    const galleryItems = document.querySelectorAll('.gallery-item img');
+    galleryImages = Array.from(galleryItems)
+        .map(img => ({ src: img.src || img.getAttribute('src'), alt: img.alt || 'Gallery Image' }))
+        .filter(img => img.src && img.src.trim() !== '');
 
-            const processBatch = () => {
-                if (isProcessingBatch || pendingImages.length === 0) {
+    // Simple lazy loading
+    if ('IntersectionObserver' in window) {
+        const processed = new WeakSet();
+        imageLoadObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const img = entry.target;
+                if (processed.has(img)) {
+                    imageLoadObserver.unobserve(img);
                     return;
                 }
-                
-                isProcessingBatch = true;
-                
-                // Take batch and remove from pending
-                const batch = pendingImages.splice(0, BATCH_SIZE);
-                
-                batch.forEach(({ img, galleryItem }) => {
-                    // Skip if already processed
-                    if (processedImages.has(img)) {
-                        return;
-                    }
-                    
-                    processedImages.add(img);
-                    
-                    try {
-                        // Handle image loading with fade-in effect
-                        if (img.complete && img.naturalHeight !== 0) {
-                            img.classList.add('loaded');
-                            galleryItem.classList.add('image-loaded');
-                        } else {
-                            // Use one-time event listeners
-                            const onLoad = () => {
-                                try {
-                                    img.classList.add('loaded');
-                                    galleryItem.classList.add('image-loaded');
-                                } catch (e) {
-                                    console.error('Error in image load handler:', e);
-                                }
-                            };
-                            
-                            const onError = () => {
-                                try {
-                                    img.classList.add('loaded'); // Still show placeholder even on error
-                                    galleryItem.classList.add('image-loaded');
-                                } catch (e) {
-                                    console.error('Error in image error handler:', e);
-                                }
-                            };
-                            
-                            img.addEventListener('load', onLoad, { once: true });
-                            img.addEventListener('error', onError, { once: true });
-                        }
-                        
-                        // Stop observing once processed
-                        try {
-                            imageLoadObserver.unobserve(img);
-                        } catch (e) {
-                            // Image might already be unobserved, ignore error
-                        }
-                    } catch (error) {
-                        console.error('Error processing image:', error);
-                    }
-                });
-
-                // Process next batch after delay
-                if (pendingImages.length > 0) {
-                    if (batchTimeout) {
-                        clearTimeout(batchTimeout);
-                    }
-                    batchTimeout = setTimeout(() => {
-                        isProcessingBatch = false;
-                        processBatch();
-                    }, BATCH_DELAY);
+                processed.add(img);
+                const item = img.closest('.gallery-item');
+                if (!item) {
+                    imageLoadObserver.unobserve(img);
+                    return;
+                }
+                const handleLoad = () => {
+                    img.classList.add('loaded');
+                    item.classList.add('image-loaded');
+                };
+                if (img.complete && img.naturalHeight !== 0) {
+                    handleLoad();
                 } else {
-                    isProcessingBatch = false;
+                    img.addEventListener('load', handleLoad, { once: true });
+                    img.addEventListener('error', handleLoad, { once: true });
                 }
-            };
-
-            imageLoadObserver = new IntersectionObserver((entries) => {
-                try {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const img = entry.target;
-                            
-                            // Skip if already processed
-                            if (processedImages.has(img)) {
-                                try {
-                                    imageLoadObserver.unobserve(img);
-                                } catch (e) {
-                                    // Ignore if already unobserved
-                                }
-                                return;
-                            }
-                            
-                            const galleryItem = img.closest('.gallery-item');
-                            
-                            if (!galleryItem || !img.src) {
-                                return;
-                            }
-
-                            // Check if already in pending array
-                            const alreadyPending = pendingImages.some(item => item.img === img);
-                            
-                            if (!alreadyPending) {
-                                pendingImages.push({ img, galleryItem });
-                                
-                                // Process batch if not already processing
-                                if (!isProcessingBatch) {
-                                    processBatch();
-                                }
-                            }
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error in IntersectionObserver callback:', error);
-                }
-            }, {
-                rootMargin: '50px', // Reduced from 100px to prevent too early loading
-                threshold: 0.1 // Increased threshold for better performance
+                imageLoadObserver.unobserve(img);
             });
-        }
-
-        // Initialize gallery images with lazy loading
-        const galleryItems = document.querySelectorAll('.gallery-item img');
-        
-        // Collect all gallery images for lightbox first
-        galleryImages = Array.from(galleryItems)
-            .map(img => ({
-                src: img.src || img.getAttribute('src'),
-                alt: img.alt || 'Gallery Image'
-            }))
-            .filter(img => img.src && img.src.trim() !== '');
-
-        // Observe images for lazy loading with batch processing
-        if (imageLoadObserver && galleryItems.length > 0) {
-            galleryItems.forEach(img => {
-                try {
-                    if (img && img.src) {
-                        imageLoadObserver.observe(img);
-                    }
-                } catch (error) {
-                    console.error('Error observing image:', error);
-                }
-            });
-        } else {
-            // Fallback for browsers without IntersectionObserver - use batch loading
-            const imagesArray = Array.from(galleryItems);
-            let currentIndex = 0;
-
-            const loadNextBatch = () => {
-                const batch = imagesArray.slice(currentIndex, currentIndex + BATCH_SIZE);
-                currentIndex += BATCH_SIZE;
-
-                batch.forEach(img => {
-                    const galleryItem = img.closest('.gallery-item');
-                    if (galleryItem) {
-                        if (img.complete && img.naturalHeight !== 0) {
-                            img.classList.add('loaded');
-                            galleryItem.classList.add('image-loaded');
-                        } else {
-                            const onLoad = () => {
-                                img.classList.add('loaded');
-                                galleryItem.classList.add('image-loaded');
-                                img.removeEventListener('load', onLoad);
-                                img.removeEventListener('error', onError);
-                            };
-                            
-                            const onError = () => {
-                                img.classList.add('loaded');
-                                galleryItem.classList.add('image-loaded');
-                                img.removeEventListener('load', onLoad);
-                                img.removeEventListener('error', onError);
-                            };
-                            
-                            img.addEventListener('load', onLoad, { once: true });
-                            img.addEventListener('error', onError, { once: true });
-                        }
-                    }
-                });
-
-                // Load next batch after delay
-                if (currentIndex < imagesArray.length) {
-                    setTimeout(loadNextBatch, BATCH_DELAY);
-                }
-            };
-
-            // Start loading first batch after a short delay
-            setTimeout(loadNextBatch, 100);
-        }
-
-        // Add click event to gallery items (use event delegation for better performance)
-        const galleryContainer = document.querySelector('.gallery-heart-container');
-        if (galleryContainer) {
-            galleryContainer.addEventListener('click', (e) => {
-                const galleryItem = e.target.closest('.gallery-item');
-                if (!galleryItem) return;
-                
-                const img = galleryItem.querySelector('img');
-                if (img && img.src) {
-                    const imageIndex = galleryImages.findIndex(gImg => gImg.src === img.src);
-                    if (imageIndex !== -1) {
-                        openLightbox(imageIndex);
-                    }
-                }
-            });
-        }
-
-        // Lightbox controls
-        const lightbox = document.getElementById('galleryLightbox');
-        const lightboxClose = document.getElementById('lightboxClose');
-        const lightboxPrev = document.getElementById('lightboxPrev');
-        const lightboxNext = document.getElementById('lightboxNext');
-
-        if (lightboxClose) {
-            lightboxClose.addEventListener('click', closeLightbox);
-        }
-
-        if (lightboxPrev) {
-            lightboxPrev.addEventListener('click', () => navigateLightbox(-1));
-        }
-
-        if (lightboxNext) {
-            lightboxNext.addEventListener('click', () => navigateLightbox(1));
-        }
-
-        // Close on background click
-        if (lightbox) {
-            lightbox.addEventListener('click', (e) => {
-                if (e.target === lightbox) {
-                    closeLightbox();
-                }
-            });
-        }
-
-        // Keyboard navigation (use single event listener)
-        const handleKeydown = (e) => {
-            if (lightbox && lightbox.classList.contains('active')) {
-                if (e.key === 'Escape') {
-                    closeLightbox();
-                } else if (e.key === 'ArrowLeft') {
-                    navigateLightbox(-1);
-                } else if (e.key === 'ArrowRight') {
-                    navigateLightbox(1);
+        }, { rootMargin: '20px', threshold: 0.01 });
+        galleryItems.forEach(img => img.src && imageLoadObserver.observe(img));
+    } else {
+        galleryItems.forEach(img => {
+            const item = img.closest('.gallery-item');
+            if (item) {
+                const handleLoad = () => {
+                    img.classList.add('loaded');
+                    item.classList.add('image-loaded');
+                };
+                if (img.complete && img.naturalHeight !== 0) handleLoad();
+                else {
+                    img.addEventListener('load', handleLoad, { once: true });
+                    img.addEventListener('error', handleLoad, { once: true });
                 }
             }
-        };
-        
-        document.addEventListener('keydown', handleKeydown);
-
-        // Generate thumbnails only once
-        generateThumbnails();
-    } catch (error) {
-        console.error('Error initializing gallery:', error);
-        galleryInitialized = false; // Allow retry on error
+        });
     }
+
+    // Add click event to gallery items (use event delegation for better performance)
+    const galleryContainer = document.querySelector('.gallery-heart-container');
+    if (galleryContainer) {
+        galleryContainer.addEventListener('click', (e) => {
+            const galleryItem = e.target.closest('.gallery-item');
+            if (!galleryItem) return;
+            const img = galleryItem.querySelector('img');
+            if (img && img.src) {
+                const imageIndex = galleryImages.findIndex(gImg => gImg.src === img.src);
+                if (imageIndex !== -1) openLightbox(imageIndex);
+            }
+        });
+    }
+
+    // Lightbox controls
+    const lightbox = document.getElementById('galleryLightbox');
+    const lightboxClose = document.getElementById('lightboxClose');
+    const lightboxPrev = document.getElementById('lightboxPrev');
+    const lightboxNext = document.getElementById('lightboxNext');
+
+    if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+    if (lightboxPrev) lightboxPrev.addEventListener('click', () => navigateLightbox(-1));
+    if (lightboxNext) lightboxNext.addEventListener('click', () => navigateLightbox(1));
+
+    if (lightbox) {
+        lightbox.addEventListener('click', (e) => {
+            if (e.target === lightbox) closeLightbox();
+        });
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (lightbox?.classList.contains('active')) {
+            if (e.key === 'Escape') closeLightbox();
+            else if (e.key === 'ArrowLeft') navigateLightbox(-1);
+            else if (e.key === 'ArrowRight') navigateLightbox(1);
+        }
+    });
+
+    generateThumbnails();
 }
 
 function generateThumbnails() {
@@ -934,90 +647,37 @@ try {
 }
 
 // Falling Hearts Animation
-function createFallingHeart() {
-    try {
-        const heart = document.createElement('div');
-        heart.className = 'falling-heart';
-        
-        // Random position from left to right
-        const leftPosition = Math.random() * 100;
-        heart.style.left = leftPosition + '%';
-        
-        // Random size between 15px and 30px
-        const size = 15 + Math.random() * 15;
-        heart.style.fontSize = size + 'px';
-        
-        // Random animation duration between 3s and 6s
-        const duration = 3 + Math.random() * 3;
-        heart.style.animationDuration = duration + 's';
-        
-        // Random delay to create staggered effect
-        heart.style.animationDelay = Math.random() * 2 + 's';
-        
-        document.body.appendChild(heart);
-        
-        // Remove heart after animation completes
-        setTimeout(() => {
-            if (heart.parentNode) {
-                heart.parentNode.removeChild(heart);
-            }
-        }, (duration + 2) * 1000);
-    } catch (error) {
-        console.error('Error creating falling heart:', error);
-    }
-}
-
-// Create falling hearts periodically
 let heartInterval;
 
+function createFallingHeart() {
+    const heart = document.createElement('div');
+    heart.className = 'falling-heart';
+    heart.style.left = Math.random() * 100 + '%';
+    heart.style.fontSize = (15 + Math.random() * 15) + 'px';
+    const duration = 3 + Math.random() * 3;
+    heart.style.animationDuration = duration + 's';
+    heart.style.animationDelay = Math.random() * 2 + 's';
+    document.body.appendChild(heart);
+    setTimeout(() => heart.remove(), (duration + 2) * 1000);
+}
+
 function startFallingHearts() {
-    try {
-        // Create a heart every 300-800ms
-        heartInterval = setInterval(() => {
-            createFallingHeart();
-        }, 300 + Math.random() * 500);
-    } catch (error) {
-        console.error('Error starting falling hearts:', error);
-    }
+    heartInterval = setInterval(createFallingHeart, 300 + Math.random() * 500);
 }
 
 function stopFallingHearts() {
-    try {
-        if (heartInterval) {
-            clearInterval(heartInterval);
-            heartInterval = null;
-        }
-    } catch (error) {
-        console.error('Error stopping falling hearts:', error);
+    if (heartInterval) {
+        clearInterval(heartInterval);
+        heartInterval = null;
     }
 }
 
-// Start falling hearts when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    try {
-        // Start after a short delay
-        setTimeout(() => {
-            startFallingHearts();
-        }, 1000);
-    } catch (error) {
-        console.error('Error initializing falling hearts:', error);
-    }
+    setTimeout(startFallingHearts, 1000);
 });
 
-// Optional: Stop hearts when user is not active (to save performance)
-let isPageVisible = true;
 document.addEventListener('visibilitychange', () => {
-    try {
-        if (document.hidden) {
-            isPageVisible = false;
-            stopFallingHearts();
-        } else {
-            isPageVisible = true;
-            startFallingHearts();
-        }
-    } catch (error) {
-        console.error('Visibility change error:', error);
-    }
+    document.hidden ? stopFallingHearts() : startFallingHearts();
 });
 
 // Image Slider Functionality
