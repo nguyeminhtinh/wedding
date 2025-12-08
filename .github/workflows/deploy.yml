@@ -1,0 +1,28 @@
+name: Deploy Website
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Upload all static files (HTML, CSS, JS, images)
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      # Deploy to GitHub Pages
+      - id: deployment
+        uses: actions/deploy-pages@v4
