@@ -343,6 +343,8 @@ let galleryImages = [];
 let currentImageIndex = 0;
 let galleryInitialized = false;
 let imageLoadObserver = null;
+const BATCH_SIZE = 3; // Load 3 images at a time
+const BATCH_DELAY = 200; // Delay 200ms between batches
 
 function initGalleryLightbox() {
     try {
@@ -350,8 +352,65 @@ function initGalleryLightbox() {
         if (galleryInitialized) return;
         galleryInitialized = true;
 
-        // Use Intersection Observer for lazy loading images
+        // Mark empty gallery items (items without images) to hide loading spinner
+        document.querySelectorAll('.gallery-item').forEach(item => {
+            const img = item.querySelector('img');
+            if (img) {
+                item.classList.add('has-image');
+            }
+        });
+
+        // Use Intersection Observer for lazy loading images with batch processing
         if ('IntersectionObserver' in window) {
+            let pendingImages = [];
+            let isProcessingBatch = false;
+
+            const processBatch = () => {
+                if (isProcessingBatch || pendingImages.length === 0) return;
+                
+                isProcessingBatch = true;
+                const batch = pendingImages.splice(0, BATCH_SIZE);
+                
+                batch.forEach(({ img, galleryItem }) => {
+                    // Handle image loading with fade-in effect
+                    if (img.complete && img.naturalHeight !== 0) {
+                        img.classList.add('loaded');
+                        galleryItem.classList.add('image-loaded');
+                    } else {
+                        // Use one-time event listeners
+                        const onLoad = () => {
+                            img.classList.add('loaded');
+                            galleryItem.classList.add('image-loaded');
+                            img.removeEventListener('load', onLoad);
+                            img.removeEventListener('error', onError);
+                        };
+                        
+                        const onError = () => {
+                            img.classList.add('loaded'); // Still show placeholder even on error
+                            galleryItem.classList.add('image-loaded');
+                            img.removeEventListener('load', onLoad);
+                            img.removeEventListener('error', onError);
+                        };
+                        
+                        img.addEventListener('load', onLoad, { once: true });
+                        img.addEventListener('error', onError, { once: true });
+                    }
+                    
+                    // Stop observing once loaded
+                    imageLoadObserver.unobserve(img);
+                });
+
+                // Process next batch after delay
+                if (pendingImages.length > 0) {
+                    setTimeout(() => {
+                        isProcessingBatch = false;
+                        processBatch();
+                    }, BATCH_DELAY);
+                } else {
+                    isProcessingBatch = false;
+                }
+            };
+
             imageLoadObserver = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -360,36 +419,17 @@ function initGalleryLightbox() {
                         
                         if (!galleryItem) return;
 
-                        // Handle image loading with fade-in effect
-                        if (img.complete && img.naturalHeight !== 0) {
-                            img.classList.add('loaded');
-                            galleryItem.classList.add('image-loaded');
-                        } else {
-                            // Use one-time event listeners
-                            const onLoad = () => {
-                                img.classList.add('loaded');
-                                galleryItem.classList.add('image-loaded');
-                                img.removeEventListener('load', onLoad);
-                                img.removeEventListener('error', onError);
-                            };
-                            
-                            const onError = () => {
-                                img.classList.add('loaded'); // Still show placeholder even on error
-                                galleryItem.classList.add('image-loaded');
-                                img.removeEventListener('load', onLoad);
-                                img.removeEventListener('error', onError);
-                            };
-                            
-                            img.addEventListener('load', onLoad, { once: true });
-                            img.addEventListener('error', onError, { once: true });
-                        }
+                        // Add to pending batch
+                        pendingImages.push({ img, galleryItem });
                         
-                        // Stop observing once loaded
-                        imageLoadObserver.unobserve(img);
+                        // Process batch if not already processing
+                        if (!isProcessingBatch) {
+                            processBatch();
+                        }
                     }
                 });
             }, {
-                rootMargin: '50px', // Start loading 50px before image enters viewport
+                rootMargin: '100px', // Start loading 100px before image enters viewport
                 threshold: 0.01
             });
         }
@@ -405,38 +445,56 @@ function initGalleryLightbox() {
             }))
             .filter(img => img.src && img.src.trim() !== '');
 
-        // Observe images for lazy loading
-        galleryItems.forEach(img => {
-            if (imageLoadObserver) {
+        // Observe images for lazy loading with batch processing
+        if (imageLoadObserver) {
+            galleryItems.forEach(img => {
                 imageLoadObserver.observe(img);
-            } else {
-                // Fallback for browsers without IntersectionObserver
-                const galleryItem = img.closest('.gallery-item');
-                if (galleryItem) {
-                    if (img.complete && img.naturalHeight !== 0) {
-                        img.classList.add('loaded');
-                        galleryItem.classList.add('image-loaded');
-                    } else {
-                        const onLoad = () => {
+            });
+        } else {
+            // Fallback for browsers without IntersectionObserver - use batch loading
+            const imagesArray = Array.from(galleryItems);
+            let currentIndex = 0;
+
+            const loadNextBatch = () => {
+                const batch = imagesArray.slice(currentIndex, currentIndex + BATCH_SIZE);
+                currentIndex += BATCH_SIZE;
+
+                batch.forEach(img => {
+                    const galleryItem = img.closest('.gallery-item');
+                    if (galleryItem) {
+                        if (img.complete && img.naturalHeight !== 0) {
                             img.classList.add('loaded');
                             galleryItem.classList.add('image-loaded');
-                            img.removeEventListener('load', onLoad);
-                            img.removeEventListener('error', onError);
-                        };
-                        
-                        const onError = () => {
-                            img.classList.add('loaded');
-                            galleryItem.classList.add('image-loaded');
-                            img.removeEventListener('load', onLoad);
-                            img.removeEventListener('error', onError);
-                        };
-                        
-                        img.addEventListener('load', onLoad, { once: true });
-                        img.addEventListener('error', onError, { once: true });
+                        } else {
+                            const onLoad = () => {
+                                img.classList.add('loaded');
+                                galleryItem.classList.add('image-loaded');
+                                img.removeEventListener('load', onLoad);
+                                img.removeEventListener('error', onError);
+                            };
+                            
+                            const onError = () => {
+                                img.classList.add('loaded');
+                                galleryItem.classList.add('image-loaded');
+                                img.removeEventListener('load', onLoad);
+                                img.removeEventListener('error', onError);
+                            };
+                            
+                            img.addEventListener('load', onLoad, { once: true });
+                            img.addEventListener('error', onError, { once: true });
+                        }
                     }
+                });
+
+                // Load next batch after delay
+                if (currentIndex < imagesArray.length) {
+                    setTimeout(loadNextBatch, BATCH_DELAY);
                 }
-            }
-        });
+            };
+
+            // Start loading first batch after a short delay
+            setTimeout(loadNextBatch, 100);
+        }
 
         // Add click event to gallery items (use event delegation for better performance)
         const galleryContainer = document.querySelector('.gallery-heart-container');

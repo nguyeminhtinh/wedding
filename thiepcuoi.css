@@ -857,13 +857,26 @@ body {
     margin: -1px;
     vertical-align: top;
     position: relative;
-    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+    background: transparent;
     min-height: 140px;
+}
+
+/* Only apply background to items that have images */
+.gallery-item:has(img),
+.gallery-item.has-image {
+    background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+}
+
+/* Hide border for empty items */
+.gallery-item:not(:has(img)):not(.has-image) {
+    border: none;
+    cursor: default;
 }
 
 .gallery-item img {
     width: 100%;
     height: 100%;
+    aspect-ratio: 1 / 1;
     object-fit: cover;
     display: block;
     opacity: 0;
@@ -871,11 +884,17 @@ body {
     background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
 }
 
+/* Ensure empty items are truly transparent */
+.gallery-item:not(:has(img)):not(.has-image) {
+    background: transparent !important;
+}
+
 .gallery-item img.loaded {
     opacity: 1;
 }
 
-.gallery-item::after {
+/* Only show loading spinner for items that have images */
+.gallery-item:has(img)::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -892,7 +911,7 @@ body {
     transition: opacity 0.3s ease;
 }
 
-/* Use class-based selector instead of :has() for better Safari support */
+/* Hide loading spinner when image is loaded */
 .gallery-item.image-loaded::after {
     opacity: 0;
     display: none;
@@ -904,6 +923,29 @@ body {
         opacity: 0;
         display: none;
     }
+}
+
+/* For browsers without :has() support, use class-based approach */
+.gallery-item.has-image::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(212, 165, 116, 0.3);
+    border-top-color: var(--red-accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    z-index: 2;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.gallery-item.has-image.image-loaded::after {
+    opacity: 0;
+    display: none;
 }
 
 /* Fallback for browsers that don't support :has() */
