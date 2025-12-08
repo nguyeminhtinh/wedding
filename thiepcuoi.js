@@ -362,47 +362,75 @@ function initGalleryLightbox() {
 
         // Use Intersection Observer for lazy loading images with batch processing
         if ('IntersectionObserver' in window) {
-            let pendingImages = [];
+            let pendingImages = []; // Array to store pending images
+            let processedImages = new WeakSet(); // Use WeakSet to track processed images
             let isProcessingBatch = false;
+            let batchTimeout = null;
 
             const processBatch = () => {
-                if (isProcessingBatch || pendingImages.length === 0) return;
+                if (isProcessingBatch || pendingImages.length === 0) {
+                    return;
+                }
                 
                 isProcessingBatch = true;
+                
+                // Take batch and remove from pending
                 const batch = pendingImages.splice(0, BATCH_SIZE);
                 
                 batch.forEach(({ img, galleryItem }) => {
-                    // Handle image loading with fade-in effect
-                    if (img.complete && img.naturalHeight !== 0) {
-                        img.classList.add('loaded');
-                        galleryItem.classList.add('image-loaded');
-                    } else {
-                        // Use one-time event listeners
-                        const onLoad = () => {
-                            img.classList.add('loaded');
-                            galleryItem.classList.add('image-loaded');
-                            img.removeEventListener('load', onLoad);
-                            img.removeEventListener('error', onError);
-                        };
-                        
-                        const onError = () => {
-                            img.classList.add('loaded'); // Still show placeholder even on error
-                            galleryItem.classList.add('image-loaded');
-                            img.removeEventListener('load', onLoad);
-                            img.removeEventListener('error', onError);
-                        };
-                        
-                        img.addEventListener('load', onLoad, { once: true });
-                        img.addEventListener('error', onError, { once: true });
+                    // Skip if already processed
+                    if (processedImages.has(img)) {
+                        return;
                     }
                     
-                    // Stop observing once loaded
-                    imageLoadObserver.unobserve(img);
+                    processedImages.add(img);
+                    
+                    try {
+                        // Handle image loading with fade-in effect
+                        if (img.complete && img.naturalHeight !== 0) {
+                            img.classList.add('loaded');
+                            galleryItem.classList.add('image-loaded');
+                        } else {
+                            // Use one-time event listeners
+                            const onLoad = () => {
+                                try {
+                                    img.classList.add('loaded');
+                                    galleryItem.classList.add('image-loaded');
+                                } catch (e) {
+                                    console.error('Error in image load handler:', e);
+                                }
+                            };
+                            
+                            const onError = () => {
+                                try {
+                                    img.classList.add('loaded'); // Still show placeholder even on error
+                                    galleryItem.classList.add('image-loaded');
+                                } catch (e) {
+                                    console.error('Error in image error handler:', e);
+                                }
+                            };
+                            
+                            img.addEventListener('load', onLoad, { once: true });
+                            img.addEventListener('error', onError, { once: true });
+                        }
+                        
+                        // Stop observing once processed
+                        try {
+                            imageLoadObserver.unobserve(img);
+                        } catch (e) {
+                            // Image might already be unobserved, ignore error
+                        }
+                    } catch (error) {
+                        console.error('Error processing image:', error);
+                    }
                 });
 
                 // Process next batch after delay
                 if (pendingImages.length > 0) {
-                    setTimeout(() => {
+                    if (batchTimeout) {
+                        clearTimeout(batchTimeout);
+                    }
+                    batchTimeout = setTimeout(() => {
                         isProcessingBatch = false;
                         processBatch();
                     }, BATCH_DELAY);
@@ -412,25 +440,46 @@ function initGalleryLightbox() {
             };
 
             imageLoadObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        const galleryItem = img.closest('.gallery-item');
-                        
-                        if (!galleryItem) return;
+                try {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            
+                            // Skip if already processed
+                            if (processedImages.has(img)) {
+                                try {
+                                    imageLoadObserver.unobserve(img);
+                                } catch (e) {
+                                    // Ignore if already unobserved
+                                }
+                                return;
+                            }
+                            
+                            const galleryItem = img.closest('.gallery-item');
+                            
+                            if (!galleryItem || !img.src) {
+                                return;
+                            }
 
-                        // Add to pending batch
-                        pendingImages.push({ img, galleryItem });
-                        
-                        // Process batch if not already processing
-                        if (!isProcessingBatch) {
-                            processBatch();
+                            // Check if already in pending array
+                            const alreadyPending = pendingImages.some(item => item.img === img);
+                            
+                            if (!alreadyPending) {
+                                pendingImages.push({ img, galleryItem });
+                                
+                                // Process batch if not already processing
+                                if (!isProcessingBatch) {
+                                    processBatch();
+                                }
+                            }
                         }
-                    }
-                });
+                    });
+                } catch (error) {
+                    console.error('Error in IntersectionObserver callback:', error);
+                }
             }, {
-                rootMargin: '100px', // Start loading 100px before image enters viewport
-                threshold: 0.01
+                rootMargin: '50px', // Reduced from 100px to prevent too early loading
+                threshold: 0.1 // Increased threshold for better performance
             });
         }
 
@@ -446,9 +495,15 @@ function initGalleryLightbox() {
             .filter(img => img.src && img.src.trim() !== '');
 
         // Observe images for lazy loading with batch processing
-        if (imageLoadObserver) {
+        if (imageLoadObserver && galleryItems.length > 0) {
             galleryItems.forEach(img => {
-                imageLoadObserver.observe(img);
+                try {
+                    if (img && img.src) {
+                        imageLoadObserver.observe(img);
+                    }
+                } catch (error) {
+                    console.error('Error observing image:', error);
+                }
             });
         } else {
             // Fallback for browsers without IntersectionObserver - use batch loading
@@ -807,8 +862,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize background music (auto play)
         initBackgroundMusic();
 
-        // Add parallax effect to hero section
-        window.addEventListener('scroll', () => {
+        // Add parallax effect to hero section with throttling
+        let lastScrollTime = 0;
+        const scrollThrottle = 16; // ~60fps
+        
+        const handleParallax = () => {
+            const now = Date.now();
+            if (now - lastScrollTime < scrollThrottle) {
+                return;
+            }
+            lastScrollTime = now;
+            
             try {
                 const scrolled = window.pageYOffset;
                 const heroSection = document.querySelector('.hero-section');
@@ -817,6 +881,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 console.error('Parallax error:', error);
+            }
+        };
+        
+        window.addEventListener('scroll', handleParallax, { passive: true });
+        
+        // Cleanup Intersection Observer on page unload
+        window.addEventListener('beforeunload', () => {
+            try {
+                if (imageLoadObserver) {
+                    imageLoadObserver.disconnect();
+                    imageLoadObserver = null;
+                }
+            } catch (e) {
+                // Ignore cleanup errors
             }
         });
     } catch (error) {

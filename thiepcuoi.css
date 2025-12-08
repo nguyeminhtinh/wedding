@@ -1692,6 +1692,9 @@ body {
     .footer-title{
         font-size: 2rem;
     }
+    .guestbook-section{
+        padding-top: 13rem;
+    }
 }
 
 /* Falling Hearts Animation */
