@@ -341,57 +341,119 @@ function viewMap(eventId) {
 // Gallery Lightbox Functionality
 let galleryImages = [];
 let currentImageIndex = 0;
+let galleryInitialized = false;
+let imageLoadObserver = null;
 
 function initGalleryLightbox() {
     try {
-        // Handle image loading with fade-in effect
-        const handleImageLoad = (img) => {
-            const galleryItem = img.closest('.gallery-item');
-            if (!galleryItem) return;
+        // Prevent multiple initializations
+        if (galleryInitialized) return;
+        galleryInitialized = true;
 
-            if (img.complete && img.naturalHeight !== 0) {
-                img.classList.add('loaded');
-                galleryItem.classList.add('image-loaded');
-            } else {
-                img.addEventListener('load', () => {
-                    img.classList.add('loaded');
-                    galleryItem.classList.add('image-loaded');
-                });
-                img.addEventListener('error', () => {
-                    img.classList.add('loaded'); // Still show placeholder even on error
-                    galleryItem.classList.add('image-loaded');
-                });
-            }
-        };
+        // Use Intersection Observer for lazy loading images
+        if ('IntersectionObserver' in window) {
+            imageLoadObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const galleryItem = img.closest('.gallery-item');
+                        
+                        if (!galleryItem) return;
 
-        // Initialize all gallery images
+                        // Handle image loading with fade-in effect
+                        if (img.complete && img.naturalHeight !== 0) {
+                            img.classList.add('loaded');
+                            galleryItem.classList.add('image-loaded');
+                        } else {
+                            // Use one-time event listeners
+                            const onLoad = () => {
+                                img.classList.add('loaded');
+                                galleryItem.classList.add('image-loaded');
+                                img.removeEventListener('load', onLoad);
+                                img.removeEventListener('error', onError);
+                            };
+                            
+                            const onError = () => {
+                                img.classList.add('loaded'); // Still show placeholder even on error
+                                galleryItem.classList.add('image-loaded');
+                                img.removeEventListener('load', onLoad);
+                                img.removeEventListener('error', onError);
+                            };
+                            
+                            img.addEventListener('load', onLoad, { once: true });
+                            img.addEventListener('error', onError, { once: true });
+                        }
+                        
+                        // Stop observing once loaded
+                        imageLoadObserver.unobserve(img);
+                    }
+                });
+            }, {
+                rootMargin: '50px', // Start loading 50px before image enters viewport
+                threshold: 0.01
+            });
+        }
+
+        // Initialize gallery images with lazy loading
         const galleryItems = document.querySelectorAll('.gallery-item img');
+        
+        // Collect all gallery images for lightbox first
+        galleryImages = Array.from(galleryItems)
+            .map(img => ({
+                src: img.src || img.getAttribute('src'),
+                alt: img.alt || 'Gallery Image'
+            }))
+            .filter(img => img.src && img.src.trim() !== '');
+
+        // Observe images for lazy loading
         galleryItems.forEach(img => {
-            handleImageLoad(img);
+            if (imageLoadObserver) {
+                imageLoadObserver.observe(img);
+            } else {
+                // Fallback for browsers without IntersectionObserver
+                const galleryItem = img.closest('.gallery-item');
+                if (galleryItem) {
+                    if (img.complete && img.naturalHeight !== 0) {
+                        img.classList.add('loaded');
+                        galleryItem.classList.add('image-loaded');
+                    } else {
+                        const onLoad = () => {
+                            img.classList.add('loaded');
+                            galleryItem.classList.add('image-loaded');
+                            img.removeEventListener('load', onLoad);
+                            img.removeEventListener('error', onError);
+                        };
+                        
+                        const onError = () => {
+                            img.classList.add('loaded');
+                            galleryItem.classList.add('image-loaded');
+                            img.removeEventListener('load', onLoad);
+                            img.removeEventListener('error', onError);
+                        };
+                        
+                        img.addEventListener('load', onLoad, { once: true });
+                        img.addEventListener('error', onError, { once: true });
+                    }
+                }
+            }
         });
 
-        // Collect all gallery images for lightbox
-        galleryImages = Array.from(galleryItems).map(img => ({
-            src: img.src,
-            alt: img.alt || 'Gallery Image'
-        }));
-
-        // Filter out empty items (items without images)
-        galleryImages = galleryImages.filter(img => img.src);
-
-        // Add click event to gallery items
-        document.querySelectorAll('.gallery-item').forEach((item, index) => {
-            const img = item.querySelector('img');
-            if (img) {
-                item.style.cursor = 'pointer';
-                item.addEventListener('click', () => {
+        // Add click event to gallery items (use event delegation for better performance)
+        const galleryContainer = document.querySelector('.gallery-heart-container');
+        if (galleryContainer) {
+            galleryContainer.addEventListener('click', (e) => {
+                const galleryItem = e.target.closest('.gallery-item');
+                if (!galleryItem) return;
+                
+                const img = galleryItem.querySelector('img');
+                if (img && img.src) {
                     const imageIndex = galleryImages.findIndex(gImg => gImg.src === img.src);
                     if (imageIndex !== -1) {
                         openLightbox(imageIndex);
                     }
-                });
-            }
-        });
+                }
+            });
+        }
 
         // Lightbox controls
         const lightbox = document.getElementById('galleryLightbox');
@@ -420,8 +482,8 @@ function initGalleryLightbox() {
             });
         }
 
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
+        // Keyboard navigation (use single event listener)
+        const handleKeydown = (e) => {
             if (lightbox && lightbox.classList.contains('active')) {
                 if (e.key === 'Escape') {
                     closeLightbox();
@@ -431,32 +493,51 @@ function initGalleryLightbox() {
                     navigateLightbox(1);
                 }
             }
-        });
+        };
+        
+        document.addEventListener('keydown', handleKeydown);
 
-        // Generate thumbnails
+        // Generate thumbnails only once
         generateThumbnails();
     } catch (error) {
         console.error('Error initializing gallery:', error);
+        galleryInitialized = false; // Allow retry on error
     }
 }
 
 function generateThumbnails() {
     try {
         const thumbnailsContainer = document.getElementById('lightboxThumbnails');
-        if (!thumbnailsContainer) return;
+        if (!thumbnailsContainer || galleryImages.length === 0) return;
 
+        // Clear existing thumbnails
         thumbnailsContainer.innerHTML = '';
 
+        // Use event delegation for better performance
+        thumbnailsContainer.addEventListener('click', (e) => {
+            const thumbnail = e.target.closest('.lightbox-thumbnail');
+            if (thumbnail) {
+                const index = parseInt(thumbnail.dataset.index, 10);
+                if (!isNaN(index) && index >= 0 && index < galleryImages.length) {
+                    openLightbox(index);
+                }
+            }
+        });
+
+        // Create thumbnails with lazy loading
         galleryImages.forEach((img, index) => {
             const thumbnail = document.createElement('img');
             thumbnail.src = img.src;
             thumbnail.alt = img.alt;
             thumbnail.className = 'lightbox-thumbnail';
+            thumbnail.dataset.index = index;
+            thumbnail.loading = 'lazy'; // Lazy load thumbnails
             if (index === 0) thumbnail.classList.add('active');
 
-            thumbnail.addEventListener('click', () => {
-                openLightbox(index);
-            });
+            // Handle thumbnail load errors
+            thumbnail.addEventListener('error', () => {
+                thumbnail.style.display = 'none';
+            }, { once: true });
 
             thumbnailsContainer.appendChild(thumbnail);
         });
@@ -521,6 +602,28 @@ function updateLightboxImage() {
         if (!lightboxImage || !lightboxCounter || galleryImages.length === 0) return;
 
         const currentImage = galleryImages[currentImageIndex];
+        if (!currentImage || !currentImage.src) return;
+
+        // Show loading state
+        lightboxImage.style.opacity = '0.5';
+        
+        // Handle image load
+        const onImageLoad = () => {
+            lightboxImage.style.opacity = '1';
+            lightboxImage.removeEventListener('load', onImageLoad);
+            lightboxImage.removeEventListener('error', onImageError);
+        };
+        
+        const onImageError = () => {
+            lightboxImage.style.opacity = '1';
+            lightboxImage.alt = 'Image failed to load';
+            lightboxImage.removeEventListener('load', onImageLoad);
+            lightboxImage.removeEventListener('error', onImageError);
+        };
+        
+        lightboxImage.addEventListener('load', onImageLoad, { once: true });
+        lightboxImage.addEventListener('error', onImageError, { once: true });
+        
         lightboxImage.src = currentImage.src;
         lightboxImage.alt = currentImage.alt;
 
@@ -531,9 +634,14 @@ function updateLightboxImage() {
         thumbnails.forEach((thumb, index) => {
             if (index === currentImageIndex) {
                 thumb.classList.add('active');
-                // Scroll thumbnail into view (with fallback)
-                if (thumb.scrollIntoView) {
-                    thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                // Scroll thumbnail into view (with fallback and error handling)
+                try {
+                    if (thumb.scrollIntoView) {
+                        thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    }
+                } catch (scrollError) {
+                    // Fallback if scrollIntoView fails
+                    thumb.scrollIntoView(false);
                 }
             } else {
                 thumb.classList.remove('active');
