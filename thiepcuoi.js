@@ -1,91 +1,150 @@
-// Navigation and scroll animations
+// Wrap everything in DOMContentLoaded and add error handling
 document.addEventListener('DOMContentLoaded', () => {
-    const navbar = document.getElementById('navbar');
-    const navToggle = document.getElementById('navToggle');
-    const navMenu = document.getElementById('navMenu');
+    try {
+        // Navigation
+        const navbar = document.getElementById('navbar');
+        const navToggle = document.getElementById('navToggle');
+        const navMenu = document.getElementById('navMenu');
 
-    // Navbar scroll effect
-    if (navbar) {
-        window.addEventListener('scroll', () => {
-            navbar.classList.toggle('scrolled', window.scrollY > 50);
-        }, { passive: true });
-    }
-
-    // Mobile menu toggle
-    if (navToggle && navMenu) {
-        navToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
-    }
-
-    // Close mobile menu when clicking on a link
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', () => navMenu?.classList.remove('active'));
-    });
-
-    // Smooth scroll for navigation links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                window.scrollTo({ top: target.offsetTop - 80, behavior: 'smooth' });
-            }
-        });
-    });
-
-    // Intersection Observer for scroll animations
-    if ('IntersectionObserver' in window) {
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) entry.target.classList.add('animated');
+        // Navbar scroll effect
+        if (navbar) {
+            window.addEventListener('scroll', () => {
+                try {
+                    if (window.scrollY > 50) {
+                        navbar.classList.add('scrolled');
+                    } else {
+                        navbar.classList.remove('scrolled');
+                    }
+                } catch (e) {
+                    console.error('Scroll error:', e);
+                }
             });
-        }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+        }
 
-        document.querySelectorAll('.fade-in-up, .slide-in-left, .slide-in-right').forEach(el => {
-            el.classList.add('animate-on-scroll');
-            observer.observe(el);
+        // Mobile menu toggle
+        if (navToggle && navMenu) {
+            navToggle.addEventListener('click', () => {
+                navMenu.classList.toggle('active');
+            });
+        }
+
+        // Close mobile menu when clicking on a link
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                if (navMenu) {
+                    navMenu.classList.remove('active');
+                }
+            });
         });
-    } else {
-        document.querySelectorAll('.fade-in-up, .slide-in-left, .slide-in-right').forEach(el => {
-            el.classList.add('animated');
+
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    const offsetTop = target.offsetTop - 80;
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
         });
+
+        // Intersection Observer for scroll animations (with fallback)
+        if ('IntersectionObserver' in window) {
+            const observerOptions = {
+                threshold: 0.1,
+                rootMargin: '0px 0px -50px 0px'
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('animated');
+                    }
+                });
+            }, observerOptions);
+
+            const animateElements = document.querySelectorAll('.fade-in-up, .slide-in-left, .slide-in-right');
+            animateElements.forEach(el => {
+                el.classList.add('animate-on-scroll');
+                observer.observe(el);
+            });
+        } else {
+            // Fallback: add animated class immediately
+            const animateElements = document.querySelectorAll('.fade-in-up, .slide-in-left, .slide-in-right');
+            animateElements.forEach(el => {
+                el.classList.add('animated');
+            });
+        }
+    } catch (error) {
+        console.error('Navigation initialization error:', error);
     }
 });
 
-// Modal Functions
+// Modal Functions (can be called from anywhere)
 function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.add('active');
-        document.body.style.overflow = 'hidden';
+    try {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+    } catch (error) {
+        console.error('Error opening modal:', error);
     }
 }
 
 function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.classList.remove('active');
-        document.body.style.overflow = 'auto';
+    try {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    } catch (error) {
+        console.error('Error closing modal:', error);
     }
 }
 
 // Close modal when clicking outside
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('active');
-                document.body.style.overflow = 'auto';
-            }
+    try {
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('active');
+                    document.body.style.overflow = 'auto';
+                }
+            });
         });
-    });
+    } catch (error) {
+        console.error('Modal click handler error:', error);
+    }
 });
 
 // Button event listeners
 document.addEventListener('DOMContentLoaded', () => {
-    const sendWishBtn = document.getElementById('sendWishBtn');
-    const confirmBtn = document.getElementById('confirmBtn');
-    if (sendWishBtn) sendWishBtn.addEventListener('click', () => openModal('wishModal'));
-    if (confirmBtn) confirmBtn.addEventListener('click', () => openModal('confirmModal'));
+    try {
+        const sendWishBtn = document.getElementById('sendWishBtn');
+        const confirmBtn = document.getElementById('confirmBtn');
+
+        if (sendWishBtn) {
+            sendWishBtn.addEventListener('click', () => {
+                openModal('wishModal');
+            });
+        }
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => {
+                openModal('confirmModal');
+            });
+        }
+    } catch (error) {
+        console.error('Button initialization error:', error);
+    }
 });
 
 async function submitWish(source = 'form') {
@@ -182,188 +241,225 @@ function submitConfirm() {
 }
 
 // Utility Functions
+function escapeHtml(text) {
+    try {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    } catch (error) {
+        return text;
+    }
+}
+
 function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.textContent = message;
-    notification.style.cssText = `
-        position: fixed; top: 100px; right: 20px;
-        background: ${type === 'success' ? '#4CAF50' : '#2196F3'};
-        color: white; padding: 1rem 2rem; border-radius: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 3000;
-        animation: slideInRight 0.3s ease;
-    `;
-    document.body.appendChild(notification);
-    setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
+    try {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            background: ${type === 'success' ? '#4CAF50' : '#2196F3'};
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 3000;
+            animation: slideInRight 0.3s ease;
+        `;
+
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    } catch (error) {
+        console.error('Error showing notification:', error);
+    }
 }
 
 // Calendar Functions
 function addToCalendar(eventId) {
-    const events = {
-        event1: { name: 'LỄ VU QUY (Đám cưới Minh Tinh và Thị Lài)', description: 'Cảm ơn bạn đã dành thời gian tham dự đám cưới của chúng tôi!', startDate: '2025-12-21', startTime: '10:30', location: 'NHÀ SHVH THÔN VÂN TIÊN' },
-        event2: { name: 'LỄ THÀNH HÔN (Đám cưới Minh Tình và Thị Lài)', description: 'Cảm ơn bạn đã dành thời gian tham dự đám cưới của chúng tôi!', startDate: '2025-12-25', startTime: '10:00', location: 'Khu Vui Chơi Trẻ Em Vinh Quang' }
-    };
-    const event = events[eventId];
-    if (!event) return;
-    const startDateTime = `${event.startDate}T${event.startTime}:00`.replace(/[-:]/g, '').slice(0, -2);
-    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.name)}&dates=${startDateTime}/${startDateTime}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
-    window.open(googleUrl, '_blank');
-    showNotification('Đã mở Google Calendar!', 'success');
+    try {
+        const events = {
+            event1: {
+                name: 'LỄ VU QUY (Đám cưới Minh Tinh và Thị Lài)',
+                description: 'Cảm ơn bạn đã dành thời gian tham dự đám cưới của chúng tôi!',
+                startDate: '2025-12-21',
+                startTime: '10:30',
+                location: 'NHÀ SHVH THÔN VÂN TIÊN'
+            },
+            event2: {
+                name: 'LỄ THÀNH HÔN (Đám cưới Minh Tình và Thị Lài)',
+                description: 'Cảm ơn bạn đã dành thời gian tham dự đám cưới của chúng tôi!',
+                startDate: '2025-12-25',
+                startTime: '10:00',
+                location: 'Khu Vui Chơi Trẻ Em Vinh Quang'
+            }
+        };
+
+        const event = events[eventId];
+        if (!event) return;
+
+        // Create calendar URL
+        const startDateTime = `${event.startDate}T${event.startTime}:00`;
+        const endDateTime = `${event.startDate}T${event.startTime}:00`;
+
+        // Google Calendar
+        const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(event.name)}&dates=${startDateTime.replace(/[-:]/g, '').slice(0, -2)}/${endDateTime.replace(/[-:]/g, '').slice(0, -2)}&details=${encodeURIComponent(event.description)}&location=${encodeURIComponent(event.location)}`;
+
+        window.open(googleUrl, '_blank');
+        showNotification('Đã mở Google Calendar!', 'success');
+    } catch (error) {
+        console.error('Error adding to calendar:', error);
+    }
 }
 
 function viewMap(eventId) {
-    const locations = { event1: 'NHÀ SHVH THÔN VÂN TIÊN', event2: 'Khu Vui Chơi Trẻ Em Vinh Quang' };
-    const location = locations[eventId];
-    if (!location) return;
-    window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`, '_blank');
+    try {
+        const locations = {
+            event1: 'NHÀ SHVH THÔN VÂN TIÊN',
+            event2: 'Khu Vui Chơi Trẻ Em Vinh Quang'
+        };
+
+        const location = locations[eventId];
+        if (!location) return;
+
+        const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`;
+        window.open(googleMapsUrl, '_blank');
+    } catch (error) {
+        console.error('Error viewing map:', error);
+    }
 }
 
 // Gallery Lightbox Functionality
 let galleryImages = [];
 let currentImageIndex = 0;
-let galleryInitialized = false;
-let imageLoadObserver = null;
 
 function initGalleryLightbox() {
-    if (galleryInitialized) return;
-    galleryInitialized = true;
-
-    // Mark items with images
-    document.querySelectorAll('.gallery-item').forEach(item => {
-        if (item.querySelector('img')) item.classList.add('has-image');
-    });
-
-    const galleryItems = document.querySelectorAll('.gallery-item img');
-    galleryImages = Array.from(galleryItems)
-        .map(img => ({ src: img.src || img.getAttribute('src'), alt: img.alt || 'Gallery Image' }))
-        .filter(img => img.src && img.src.trim() !== '');
-
-    // Simple lazy loading
-    if ('IntersectionObserver' in window) {
-        const processed = new WeakSet();
-        imageLoadObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (!entry.isIntersecting) return;
-                const img = entry.target;
-                if (processed.has(img)) {
-                    imageLoadObserver.unobserve(img);
-                    return;
-                }
-                processed.add(img);
-                const item = img.closest('.gallery-item');
-                if (!item) {
-                    imageLoadObserver.unobserve(img);
-                    return;
-                }
-                const handleLoad = () => {
-                    img.classList.add('loaded');
-                    item.classList.add('image-loaded');
-                };
-                if (img.complete && img.naturalHeight !== 0) {
-                    handleLoad();
-                } else {
-                    img.addEventListener('load', handleLoad, { once: true });
-                    img.addEventListener('error', handleLoad, { once: true });
-                }
-                imageLoadObserver.unobserve(img);
-            });
-        }, { rootMargin: '20px', threshold: 0.01 });
-        galleryItems.forEach(img => img.src && imageLoadObserver.observe(img));
-    } else {
-        galleryItems.forEach(img => {
-            const item = img.closest('.gallery-item');
-            if (item) {
-                const handleLoad = () => {
-                    img.classList.add('loaded');
-                    item.classList.add('image-loaded');
-                };
-                if (img.complete && img.naturalHeight !== 0) handleLoad();
-                else {
-                    img.addEventListener('load', handleLoad, { once: true });
-                    img.addEventListener('error', handleLoad, { once: true });
-                }
-            }
-        });
-    }
-
-    // Add click event to gallery items (use event delegation for better performance)
-    const galleryContainer = document.querySelector('.gallery-heart-container');
-    if (galleryContainer) {
-        galleryContainer.addEventListener('click', (e) => {
-            const galleryItem = e.target.closest('.gallery-item');
+    try {
+        // Handle image loading with fade-in effect (only for items with images)
+        const handleImageLoad = (img) => {
+            const galleryItem = img.closest('.gallery-item');
             if (!galleryItem) return;
-            const img = galleryItem.querySelector('img');
-            if (img && img.src) {
-                const imageIndex = galleryImages.findIndex(gImg => gImg.src === img.src);
-                if (imageIndex !== -1) openLightbox(imageIndex);
+
+            // Add class for browsers that don't support :has() selector
+            galleryItem.classList.add('has-image');
+
+            if (img.complete && img.naturalHeight !== 0) {
+                img.classList.add('loaded');
+                galleryItem.classList.add('image-loaded');
+            } else {
+                img.addEventListener('load', () => {
+                    img.classList.add('loaded');
+                    galleryItem.classList.add('image-loaded');
+                });
+                img.addEventListener('error', () => {
+                    img.classList.add('loaded'); // Still show placeholder even on error
+                    galleryItem.classList.add('image-loaded');
+                });
+            }
+        };
+
+        // Initialize all gallery images (only items with images)
+        const galleryItems = document.querySelectorAll('.gallery-item img');
+        galleryItems.forEach(img => {
+            handleImageLoad(img);
+        });
+
+        // Collect all gallery images for lightbox
+        galleryImages = Array.from(galleryItems).map(img => ({
+            src: img.src,
+            alt: img.alt || 'Gallery Image'
+        }));
+
+        // Filter out empty items (items without images)
+        galleryImages = galleryImages.filter(img => img.src);
+
+        // Add click event to gallery items
+        document.querySelectorAll('.gallery-item').forEach((item, index) => {
+            const img = item.querySelector('img');
+            if (img) {
+                item.style.cursor = 'pointer';
+                item.addEventListener('click', () => {
+                    const imageIndex = galleryImages.findIndex(gImg => gImg.src === img.src);
+                    if (imageIndex !== -1) {
+                        openLightbox(imageIndex);
+                    }
+                });
             }
         });
-    }
 
-    // Lightbox controls
-    const lightbox = document.getElementById('galleryLightbox');
-    const lightboxClose = document.getElementById('lightboxClose');
-    const lightboxPrev = document.getElementById('lightboxPrev');
-    const lightboxNext = document.getElementById('lightboxNext');
+        // Lightbox controls
+        const lightbox = document.getElementById('galleryLightbox');
+        const lightboxClose = document.getElementById('lightboxClose');
+        const lightboxPrev = document.getElementById('lightboxPrev');
+        const lightboxNext = document.getElementById('lightboxNext');
 
-    if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
-    if (lightboxPrev) lightboxPrev.addEventListener('click', () => navigateLightbox(-1));
-    if (lightboxNext) lightboxNext.addEventListener('click', () => navigateLightbox(1));
-
-    if (lightbox) {
-        lightbox.addEventListener('click', (e) => {
-            if (e.target === lightbox) closeLightbox();
-        });
-    }
-
-    // Keyboard navigation
-    document.addEventListener('keydown', (e) => {
-        if (lightbox?.classList.contains('active')) {
-            if (e.key === 'Escape') closeLightbox();
-            else if (e.key === 'ArrowLeft') navigateLightbox(-1);
-            else if (e.key === 'ArrowRight') navigateLightbox(1);
+        if (lightboxClose) {
+            lightboxClose.addEventListener('click', closeLightbox);
         }
-    });
 
-    generateThumbnails();
+        if (lightboxPrev) {
+            lightboxPrev.addEventListener('click', () => navigateLightbox(-1));
+        }
+
+        if (lightboxNext) {
+            lightboxNext.addEventListener('click', () => navigateLightbox(1));
+        }
+
+        // Close on background click
+        if (lightbox) {
+            lightbox.addEventListener('click', (e) => {
+                if (e.target === lightbox) {
+                    closeLightbox();
+                }
+            });
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (lightbox && lightbox.classList.contains('active')) {
+                if (e.key === 'Escape') {
+                    closeLightbox();
+                } else if (e.key === 'ArrowLeft') {
+                    navigateLightbox(-1);
+                } else if (e.key === 'ArrowRight') {
+                    navigateLightbox(1);
+                }
+            }
+        });
+
+        // Generate thumbnails
+        generateThumbnails();
+    } catch (error) {
+        console.error('Error initializing gallery:', error);
+    }
 }
 
 function generateThumbnails() {
     try {
         const thumbnailsContainer = document.getElementById('lightboxThumbnails');
-        if (!thumbnailsContainer || galleryImages.length === 0) return;
+        if (!thumbnailsContainer) return;
 
-        // Clear existing thumbnails
         thumbnailsContainer.innerHTML = '';
 
-        // Use event delegation for better performance
-        thumbnailsContainer.addEventListener('click', (e) => {
-            const thumbnail = e.target.closest('.lightbox-thumbnail');
-            if (thumbnail) {
-                const index = parseInt(thumbnail.dataset.index, 10);
-                if (!isNaN(index) && index >= 0 && index < galleryImages.length) {
-                    openLightbox(index);
-                }
-            }
-        });
-
-        // Create thumbnails with lazy loading
         galleryImages.forEach((img, index) => {
             const thumbnail = document.createElement('img');
             thumbnail.src = img.src;
             thumbnail.alt = img.alt;
             thumbnail.className = 'lightbox-thumbnail';
-            thumbnail.dataset.index = index;
-            thumbnail.loading = 'lazy'; // Lazy load thumbnails
             if (index === 0) thumbnail.classList.add('active');
 
-            // Handle thumbnail load errors
-            thumbnail.addEventListener('error', () => {
-                thumbnail.style.display = 'none';
-            }, { once: true });
+            thumbnail.addEventListener('click', () => {
+                openLightbox(index);
+            });
 
             thumbnailsContainer.appendChild(thumbnail);
         });
@@ -428,28 +524,6 @@ function updateLightboxImage() {
         if (!lightboxImage || !lightboxCounter || galleryImages.length === 0) return;
 
         const currentImage = galleryImages[currentImageIndex];
-        if (!currentImage || !currentImage.src) return;
-
-        // Show loading state
-        lightboxImage.style.opacity = '0.5';
-        
-        // Handle image load
-        const onImageLoad = () => {
-            lightboxImage.style.opacity = '1';
-            lightboxImage.removeEventListener('load', onImageLoad);
-            lightboxImage.removeEventListener('error', onImageError);
-        };
-        
-        const onImageError = () => {
-            lightboxImage.style.opacity = '1';
-            lightboxImage.alt = 'Image failed to load';
-            lightboxImage.removeEventListener('load', onImageLoad);
-            lightboxImage.removeEventListener('error', onImageError);
-        };
-        
-        lightboxImage.addEventListener('load', onImageLoad, { once: true });
-        lightboxImage.addEventListener('error', onImageError, { once: true });
-        
         lightboxImage.src = currentImage.src;
         lightboxImage.alt = currentImage.alt;
 
@@ -460,14 +534,9 @@ function updateLightboxImage() {
         thumbnails.forEach((thumb, index) => {
             if (index === currentImageIndex) {
                 thumb.classList.add('active');
-                // Scroll thumbnail into view (with fallback and error handling)
-                try {
-                    if (thumb.scrollIntoView) {
-                        thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                    }
-                } catch (scrollError) {
-                    // Fallback if scrollIntoView fails
-                    thumb.scrollIntoView(false);
+                // Scroll thumbnail into view (with fallback)
+                if (thumb.scrollIntoView) {
+                    thumb.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
                 }
             } else {
                 thumb.classList.remove('active');
@@ -575,17 +644,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize background music (auto play)
         initBackgroundMusic();
 
-        // Add parallax effect to hero section with throttling
-        let lastScrollTime = 0;
-        const scrollThrottle = 16; // ~60fps
-        
-        const handleParallax = () => {
-            const now = Date.now();
-            if (now - lastScrollTime < scrollThrottle) {
-                return;
-            }
-            lastScrollTime = now;
-            
+        // Add parallax effect to hero section
+        window.addEventListener('scroll', () => {
             try {
                 const scrolled = window.pageYOffset;
                 const heroSection = document.querySelector('.hero-section');
@@ -594,20 +654,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 console.error('Parallax error:', error);
-            }
-        };
-        
-        window.addEventListener('scroll', handleParallax, { passive: true });
-        
-        // Cleanup Intersection Observer on page unload
-        window.addEventListener('beforeunload', () => {
-            try {
-                if (imageLoadObserver) {
-                    imageLoadObserver.disconnect();
-                    imageLoadObserver = null;
-                }
-            } catch (e) {
-                // Ignore cleanup errors
             }
         });
     } catch (error) {
@@ -647,37 +693,90 @@ try {
 }
 
 // Falling Hearts Animation
-let heartInterval;
-
 function createFallingHeart() {
-    const heart = document.createElement('div');
-    heart.className = 'falling-heart';
-    heart.style.left = Math.random() * 100 + '%';
-    heart.style.fontSize = (15 + Math.random() * 15) + 'px';
-    const duration = 3 + Math.random() * 3;
-    heart.style.animationDuration = duration + 's';
-    heart.style.animationDelay = Math.random() * 2 + 's';
-    document.body.appendChild(heart);
-    setTimeout(() => heart.remove(), (duration + 2) * 1000);
-}
-
-function startFallingHearts() {
-    heartInterval = setInterval(createFallingHeart, 300 + Math.random() * 500);
-}
-
-function stopFallingHearts() {
-    if (heartInterval) {
-        clearInterval(heartInterval);
-        heartInterval = null;
+    try {
+        const heart = document.createElement('div');
+        heart.className = 'falling-heart';
+        
+        // Random position from left to right
+        const leftPosition = Math.random() * 100;
+        heart.style.left = leftPosition + '%';
+        
+        // Random size between 15px and 30px
+        const size = 15 + Math.random() * 15;
+        heart.style.fontSize = size + 'px';
+        
+        // Random animation duration between 3s and 6s
+        const duration = 3 + Math.random() * 3;
+        heart.style.animationDuration = duration + 's';
+        
+        // Random delay to create staggered effect
+        heart.style.animationDelay = Math.random() * 2 + 's';
+        
+        document.body.appendChild(heart);
+        
+        // Remove heart after animation completes
+        setTimeout(() => {
+            if (heart.parentNode) {
+                heart.parentNode.removeChild(heart);
+            }
+        }, (duration + 2) * 1000);
+    } catch (error) {
+        console.error('Error creating falling heart:', error);
     }
 }
 
+// Create falling hearts periodically
+let heartInterval;
+
+function startFallingHearts() {
+    try {
+        // Create a heart every 300-800ms
+        heartInterval = setInterval(() => {
+            createFallingHeart();
+        }, 300 + Math.random() * 500);
+    } catch (error) {
+        console.error('Error starting falling hearts:', error);
+    }
+}
+
+function stopFallingHearts() {
+    try {
+        if (heartInterval) {
+            clearInterval(heartInterval);
+            heartInterval = null;
+        }
+    } catch (error) {
+        console.error('Error stopping falling hearts:', error);
+    }
+}
+
+// Start falling hearts when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(startFallingHearts, 1000);
+    try {
+        // Start after a short delay
+        setTimeout(() => {
+            startFallingHearts();
+        }, 1000);
+    } catch (error) {
+        console.error('Error initializing falling hearts:', error);
+    }
 });
 
+// Optional: Stop hearts when user is not active (to save performance)
+let isPageVisible = true;
 document.addEventListener('visibilitychange', () => {
-    document.hidden ? stopFallingHearts() : startFallingHearts();
+    try {
+        if (document.hidden) {
+            isPageVisible = false;
+            stopFallingHearts();
+        } else {
+            isPageVisible = true;
+            startFallingHearts();
+        }
+    } catch (error) {
+        console.error('Visibility change error:', error);
+    }
 });
 
 // Image Slider Functionality
