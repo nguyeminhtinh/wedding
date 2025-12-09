@@ -149,6 +149,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function submitWish(source = 'form') {
     try {
+        // Get button element based on source
+        const submitButton = source === 'modal' 
+            ? document.getElementById('submitWishModalBtn')
+            : document.getElementById('submitWishFormBtn');
+        
+        // Disable button to prevent duplicate requests
+        if (submitButton) {
+            submitButton.disabled = true;
+            submitButton.textContent = 'Đang gửi...';
+        }
+
         // Get elements based on source (form or modal)
         let wishText, wishName;
         
@@ -164,6 +175,11 @@ async function submitWish(source = 'form') {
 
         if (!wishText || !wishName) {
             alert('Không tìm thấy form!');
+            // Re-enable button on error
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = source === 'modal' ? 'Gửi' : 'Gửi lời chúc';
+            }
             return;
         }
 
@@ -172,6 +188,11 @@ async function submitWish(source = 'form') {
 
         if (!text || !name) {
             alert('Vui lòng điền đầy đủ thông tin!');
+            // Re-enable button on validation error
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = source === 'modal' ? 'Gửi' : 'Gửi lời chúc';
+            }
             return;
         }
 
@@ -198,9 +219,24 @@ async function submitWish(source = 'form') {
         if (source === 'modal') {
             closeModal('wishModal');
         }
+
+        // Re-enable button after successful submission
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = source === 'modal' ? 'Gửi' : 'Gửi lời chúc';
+        }
     } catch (error) {
         console.error('Error submitting wish:', error);
         alert("⚠ Không kết nối được server. Vui lòng thử lại.");
+        
+        // Re-enable button on error
+        const submitButton = source === 'modal' 
+            ? document.getElementById('submitWishModalBtn')
+            : document.getElementById('submitWishFormBtn');
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = source === 'modal' ? 'Gửi' : 'Gửi lời chúc';
+        }
     }
 }
 
